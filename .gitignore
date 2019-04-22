@@ -1,0 +1,80 @@
+##############
+#  Original  #
+##############
+
+# directory structure
+bin/*
+pkg/*
+!.gitkeep
+
+# goop - go package manager
+.vendor
+
+
+
+#############################
+#  $ gibo Go JetBrains OSX  #
+#############################
+
+### https://raw.github.com/github/gitignore/5a339cce0d8ccac36e71b077ef39a55c682d6d91/Go.gitignore
+
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Folders
+_obj
+_test
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+*.exe
+*.test
+*.prof
+
+
+
+## Directory-based project format:
+.idea/
+.idea_modules/
+
+## File-based project format:
+*.ipr
+*.iws
+
+## Plugin-specific files:
+
+# File-based project format
+*.ipr
+*.iml
+*.iws
+
+# Additional for IntelliJ
+out/
+
+
+
+### https://raw.github.com/github/gitignore/5a339cce0d8ccac36e71b077ef39a55c682d6d91/Global/OSX.gitignore
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
