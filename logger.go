@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	logBufferLength = 512
+	logBufferLength = 2048
 	line            = []byte("\n")
 )
 
