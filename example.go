@@ -1,10 +1,7 @@
-# ymlog
+package ymlog
 
+func main() {
 
-
-### example
-
-```golang
 	logger := &Logger{
 		LogWriter: &FileLogWriter{
 			ChanBufferLength: 10240,
@@ -19,4 +16,4 @@
 	logger.Init()
 
 	logger.InfoString("init log")
-```
+}
