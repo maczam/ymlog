@@ -1,1 +1,1 @@
-module ymlog
+module github.com/maczam/ymlog
