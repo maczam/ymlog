@@ -79,7 +79,8 @@ func (w *FileLoggerWriter) start() {
 			// check fileRotate
 			now := time.Now()
 			if w.checkRotate(&now) {
-				fmt.Println(fmt.Sprintf("%s RotateLog>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d", now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.daily_opendate))
+				fmt.Println(fmt.Sprintf("%s RotateLog>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d",
+					now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.dailyOpenDate))
 				if err := w.fileRotate(false, &now); err != nil {
 					fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.FileName, err)
 					panic(err)
@@ -160,7 +161,8 @@ func (w *FileLoggerWriter) fileRotate(init bool, now *time.Time) error {
 	}
 
 	fileName := getActualPathReplacePattern(w.FileName)
-	fmt.Println(fmt.Sprintf("%s fileRotate>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d,fileName>%s", now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.daily_opendate, fileName))
+	fmt.Println(fmt.Sprintf("%s fileRotate>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d,fileName>%s",
+		now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.dailyOpenDate, fileName))
 
 	_, err := os.Lstat(fileName)
 	if err == nil {

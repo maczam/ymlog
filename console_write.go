@@ -14,7 +14,7 @@ func (w *ConsoleLoggerWriter) start() {
 }
 
 func (w *ConsoleLoggerWriter) writeLog(msg []byte) {
-	fmt.Println(bytesToString(msg))
+	fmt.Println(*bytesToString(msg))
 }
 
 func (w *ConsoleLoggerWriter) close() {

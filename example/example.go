@@ -1,9 +1,11 @@
-package ymlog
+package main
+
+import "github.com/maczam/ymlog"
 
 func main() {
 
 	///file log
-	logger := NewLogger(&FileLoggerWriter{
+	logger := ymlog.NewLogger(&ymlog.FileLoggerWriter{
 		ChanBufferLength: 10240,
 		FileName:         "/pdata/log/test/example.log",
 		RotateDaily:      true,
@@ -13,9 +15,9 @@ func main() {
 		WriteFileBuffer:  10,
 	},
 	)
-	logger.InfoString("init log")
+	logger.InfoString("init NewLogger log")
 
 	///console
-	logger1 := NewLogger(&ConsoleLoggerWriter{})
-	logger1.InfoString("init log")
+	logger1 := ymlog.NewLogger(&ymlog.ConsoleLoggerWriter{})
+	logger1.InfoString("init ConsoleLoggerWriter log")
 }
