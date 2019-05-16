@@ -2,10 +2,11 @@ package ymlog
 
 func main() {
 
-	logger := NewFileLogger(&FileLogWriter{
+	///file log
+	logger := NewLogger(&FileLoggerWriter{
 		ChanBufferLength: 10240,
 		FileName:         "/pdata/log/test/example.log",
-		DailyRotate:      true,
+		RotateDaily:      true,
 		RotateSize:       true,
 		MaxSize:          512, // megabytes
 		MaxBackup:        2,
@@ -13,4 +14,8 @@ func main() {
 	},
 	)
 	logger.InfoString("init log")
+
+	///console
+	logger1 := NewLogger(&ConsoleLoggerWriter{})
+	logger1.InfoString("init log")
 }
