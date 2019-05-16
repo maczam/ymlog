@@ -5,6 +5,12 @@
 ### example
 
 ```golang
+
+
+   
+logger := logger
+
+
 	logger := &Logger{
 		LogWriter: &FileLogWriter{
 			ChanBufferLength: 10240,

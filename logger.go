@@ -10,9 +10,11 @@ import (
 	"unsafe"
 )
 
+const default_log_buffer_length int = 2048
+
 var (
-	logBufferLength = 2048
-	line            = []byte("\n")
+	//logBufferLength = 2048
+	line = []byte("\n")
 )
 
 // the associated LogWriter.
@@ -20,7 +22,7 @@ type Logger struct {
 	LogWriter *FileLogWriter
 }
 
-func (log *Logger) Init() {
+func (log *Logger) start() {
 	w := log.LogWriter
 	if w == nil {
 		panic("log.LogWriter error")
@@ -34,7 +36,7 @@ func (log *Logger) Init() {
 		if w.ChanBufferLength > 0 {
 			w.msgChan = make(chan []byte, w.ChanBufferLength)
 		} else {
-			w.msgChan = make(chan []byte, logBufferLength)
+			w.msgChan = make(chan []byte, default_log_buffer_length)
 		}
 	}
 
@@ -288,4 +290,15 @@ func stringToBytes(s *string) []byte {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(s))
 	bh := reflect.SliceHeader{sh.Data, sh.Len, sh.Len}
 	return *(*[]byte)(unsafe.Pointer(&bh))
+}
+
+/**
+  new Logger
+*/
+func NewFileLogger(logWriter *FileLogWriter) *Logger {
+	logger := &Logger{
+		LogWriter: logWriter,
+	}
+	logger.start()
+	return logger
 }
