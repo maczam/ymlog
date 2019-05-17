@@ -1,8 +1,16 @@
-# ymlog
+# ymlog [![Build Status](https://travis-ci.org/maczam/ymlog.svg?branch=master)](https://travis-ci.org/maczam/ymlog)&nbsp;[![GoDoc](https://godoc.org/github.com/maczam/ymlog?status.svg)](https://godoc.org/github.com/maczam/ymlog)
+
+ymlog is golang high-performance asynchronous logging framework
+
+## Installation
+
+`go get github.com/maczam/ymlog`
 
 
 
-### example
+## Quick Start
+
+log file 
 
 ```golang
 
@@ -18,10 +26,13 @@
  	},
  	)
  	logger.InfoString("init log")
- 
+  	
+```
+
+ log console 
+ ```
  	///console
  	logger1 := NewLogger(&ConsoleLoggerWriter{},
  	)
  	logger1.InfoString("init log")
- 	
-```
+  ```
