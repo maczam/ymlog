@@ -211,11 +211,13 @@ func getActualPathReplacePattern(pattern string) string {
 	D := fmt.Sprintf("%02d", now.Day())
 	H := fmt.Sprintf("%02d", now.Hour())
 	m := fmt.Sprintf("%02d", now.Minute())
+	s := fmt.Sprintf("%02d", now.Second())
 
 	pattern = strings.Replace(pattern, "%Y", Y, -1)
 	pattern = strings.Replace(pattern, "%M", M, -1)
 	pattern = strings.Replace(pattern, "%D", D, -1)
 	pattern = strings.Replace(pattern, "%H", H, -1)
 	pattern = strings.Replace(pattern, "%m", m, -1)
+	pattern = strings.Replace(pattern, "%s", s, -1)
 	return pattern
 }

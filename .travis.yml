@@ -1,5 +1,7 @@
 language: go
 
+go_import_path: github.com/maczam/ymlog
+
 matrix:
   fast_finish: true
   include:
@@ -23,4 +25,3 @@ install:
   - if [[ "${GO111MODULE}" = "on" ]]; then go mod download; fi
   - if [[ "${GO111MODULE}" = "on" ]]; then export PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"; fi
 
-go_import_path: github.com/maczam/ymlog
