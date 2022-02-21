@@ -21,13 +21,19 @@ type FileLoggerWriter struct {
 	maxSizeByteSize int
 	dailyOpenDate   int
 	hourlyOpenDate  int
-	file            *os.File
+	minuteOpenDate  int
+	roteing         uintptr
+	//1： RotateDaily  2：RotateDaily 3：RotateMinute
+	rotateTimeType int
+	file           *os.File
 
 	FileName string
 
-	// Rotate
-	RotateSize   bool
-	RotateDaily  bool
+	// Rotate site
+	RotateSize bool
+	//Deprecated Rotate Daily.
+	RotateDaily bool
+	//Deprecated Rotate Hourly.
 	RotateHourly bool
 
 	// Keep old logfiles (.001, .002, etc)
@@ -47,6 +53,13 @@ func (w *FileLoggerWriter) start() {
 	if w.MaxSize > 0 {
 		w.maxSizeByteSize = w.MaxSize * 1024 * 1024
 	}
+	if strings.Contains(w.FileName, "%m") {
+		w.rotateTimeType = 3
+	} else if strings.Contains(w.FileName, "%H") {
+		w.rotateTimeType = 2
+	} else if strings.Contains(w.FileName, "%D") {
+		w.rotateTimeType = 1
+	}
 
 	//ChanBufferLength
 	if w.msgChan == nil {
@@ -64,6 +77,22 @@ func (w *FileLoggerWriter) start() {
 
 	now := time.Now()
 	w.fileRotate(true, &now)
+
+	// check 100 millisecond
+	go func() {
+		for range time.Tick(time.Millisecond * 100) {
+			now := time.Now()
+			if w.checkRotate(&now) {
+				fmt.Println(fmt.Sprintf("%s RotateLog>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d",
+					now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.dailyOpenDate))
+				if err := w.fileRotate(false, &now); err != nil {
+					fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.FileName, err)
+					panic(err)
+					return
+				}
+			}
+		}
+	}()
 
 	go func() {
 		defer func() {
@@ -121,8 +150,26 @@ func (w *FileLoggerWriter) writeLog(msg []byte) {
 }
 
 func (w *FileLoggerWriter) checkRotate(now *time.Time) bool {
-	if (w.RotateSize && w.maxSizeByteSize > 0 && w.maxsizeCurSize >= w.maxSizeByteSize) ||
-		(w.RotateHourly && now.Hour() != w.hourlyOpenDate) ||
+	//check size
+	if w.RotateSize && w.maxSizeByteSize > 0 && w.maxsizeCurSize >= w.maxSizeByteSize {
+		return true
+	}
+
+	// check Minute
+	if w.rotateTimeType == 3 && now.Minute() != w.minuteOpenDate {
+		return true
+	}
+	// check hour
+	if w.rotateTimeType == 2 && now.Hour() != w.hourlyOpenDate {
+		return true
+	}
+
+	// check day
+	if w.rotateTimeType == 1 && now.Day() != w.dailyOpenDate {
+		return true
+	}
+
+	if (w.RotateHourly && now.Hour() != w.hourlyOpenDate) ||
 		(w.RotateDaily && now.Day() != w.dailyOpenDate) {
 		return true
 	} else {
@@ -195,6 +242,7 @@ func (w *FileLoggerWriter) fileRotate(init bool, now *time.Time) error {
 
 	w.dailyOpenDate = now.Day()
 	w.hourlyOpenDate = now.Hour()
+	w.minuteOpenDate = now.Minute()
 	w.maxsizeCurSize = 0
 	return nil
 }
