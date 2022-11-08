@@ -1,44 +1,33 @@
 package ymlog
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
-//start()
-//writeLog([]byte)
-//close()
 const DEFAULT_LOG_BUFFER_LENGTH = 2048
+const DEFAULT_Rotate_Duration = time.Hour * 24
 
 var line = []byte("\n")
 
 type FileLoggerWriter struct {
-	msgChan         chan []byte
-	maxsizeCurSize  int
-	maxSizeByteSize int
-	dailyOpenDate   int
-	hourlyOpenDate  int
-	minuteOpenDate  int
-	roteing         uintptr
-	//1： RotateDaily  2：RotateDaily 3：RotateMinute
-	rotateTimeType int
-	file           *os.File
+	msgChan        chan []byte
+	maxsizeCurSize int64
+	maxRotateAge   time.Time
 
-	FileName string
+	file *os.File
+	mu   sync.Mutex
 
-	// Rotate site
-	RotateSize bool
-	//Deprecated Rotate Daily.
-	RotateDaily bool
-	//Deprecated Rotate Hourly.
-	RotateHourly bool
+	FileName     string
+	realFileName string
 
-	// Keep old logfiles (.001, .002, etc)
-	MaxBackup int
-	MaxSize   int //单位为M
+	RotateDuration  time.Duration
+	MaxSizeByteSize int64 //byte
 
 	//buffer
 	ChanBufferLength int
@@ -50,16 +39,16 @@ func (w *FileLoggerWriter) start() {
 		panic("log.FileLoggerWriter error")
 	}
 
-	if w.MaxSize > 0 {
-		w.maxSizeByteSize = w.MaxSize * 1024 * 1024
+	if w.RotateDuration == 0 {
+		w.RotateDuration = DEFAULT_Rotate_Duration
 	}
-	if strings.Contains(w.FileName, "%m") {
-		w.rotateTimeType = 3
-	} else if strings.Contains(w.FileName, "%H") {
-		w.rotateTimeType = 2
-	} else if strings.Contains(w.FileName, "%D") {
-		w.rotateTimeType = 1
+
+	if w.RotateDuration < time.Second {
+		fmt.Println("RotateDuration is less one Second")
+		panic(errors.New("RotateDuration is less one Second"))
 	}
+
+	w.maxRotateAge = time.Now().Add(w.RotateDuration)
 
 	//ChanBufferLength
 	if w.msgChan == nil {
@@ -75,21 +64,14 @@ func (w *FileLoggerWriter) start() {
 		w.WriteFileBuffer = 1
 	}
 
-	now := time.Now()
-	w.fileRotate(true, &now)
+	w.fileRotate(true)
 
 	// check 100 millisecond
 	go func() {
-		for range time.Tick(time.Millisecond * 100) {
-			now := time.Now()
-			if w.checkRotate(&now) {
-				fmt.Println(fmt.Sprintf("%s RotateLog>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d",
-					now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.dailyOpenDate))
-				if err := w.fileRotate(false, &now); err != nil {
-					fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.FileName, err)
-					panic(err)
-					return
-				}
+		for range time.Tick(time.Microsecond * 100) {
+			if err := w.fileRotate(false); err != nil {
+				fmt.Println(fmt.Printf("FileLogWriter(%s): %s\n", w.realFileName, err.Error()))
+				return
 			}
 		}
 	}()
@@ -105,17 +87,6 @@ func (w *FileLoggerWriter) start() {
 		//https://blog.drkaka.com/batch-get-from-golangs-buffered-channel-9638573f0c6e 批量保存日志
 		for {
 			msgBody = msgBody[:0]
-			// check fileRotate
-			now := time.Now()
-			if w.checkRotate(&now) {
-				fmt.Println(fmt.Sprintf("%s RotateLog>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d",
-					now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.dailyOpenDate))
-				if err := w.fileRotate(false, &now); err != nil {
-					fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.FileName, err)
-					panic(err)
-					return
-				}
-			}
 
 			//var items [][]byte
 			msgBody = append(msgBody, <-w.msgChan...)
@@ -139,7 +110,13 @@ func (w *FileLoggerWriter) start() {
 				fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.FileName, err)
 				return
 			}
-			w.maxsizeCurSize += n
+			w.maxsizeCurSize += int64(n)
+
+			// check fileRotate
+			if err := w.fileRotate(false); err != nil {
+				fmt.Println(fmt.Printf("FileLogWriter(%s): %s\n", w.FileName, err.Error()))
+				return
+			}
 		}
 	}()
 }
@@ -149,32 +126,19 @@ func (w *FileLoggerWriter) writeLog(msg []byte) {
 	w.msgChan <- msg
 }
 
-func (w *FileLoggerWriter) checkRotate(now *time.Time) bool {
+func (w *FileLoggerWriter) checkRotate(now time.Time) bool {
 	//check size
-	if w.RotateSize && w.maxSizeByteSize > 0 && w.maxsizeCurSize >= w.maxSizeByteSize {
+	if w.MaxSizeByteSize > 0 && w.maxsizeCurSize >= w.MaxSizeByteSize {
+		fmt.Println("checkRotate>>>>", w.maxsizeCurSize)
 		return true
 	}
 
-	// check Minute
-	if w.rotateTimeType == 3 && now.Minute() != w.minuteOpenDate {
-		return true
-	}
-	// check hour
-	if w.rotateTimeType == 2 && now.Hour() != w.hourlyOpenDate {
+	if w.maxRotateAge.Before(now) {
+		fmt.Println("checkRotate>>>>", w.maxRotateAge, now)
 		return true
 	}
 
-	// check day
-	if w.rotateTimeType == 1 && now.Day() != w.dailyOpenDate {
-		return true
-	}
-
-	if (w.RotateHourly && now.Hour() != w.hourlyOpenDate) ||
-		(w.RotateDaily && now.Day() != w.dailyOpenDate) {
-		return true
-	} else {
-		return false
-	}
+	return false
 }
 
 func (w *FileLoggerWriter) close() {
@@ -186,64 +150,73 @@ func (w *FileLoggerWriter) close() {
 /**
 Real file cutting, cutting method lock, and do secondary authentication
 */
-func (w *FileLoggerWriter) fileRotate(init bool, now *time.Time) error {
-	//拿到做
-	if !w.checkRotate(now) {
-		fileName := getActualPathReplacePattern(w.FileName)
-		checkDir(fileName)
-		fd, err := os.OpenFile(fileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0664)
-		if err != nil {
-			return err
+func (w *FileLoggerWriter) fileRotate(init bool) error {
+	//check un
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	now := time.Now()
+	if init {
+		fmt.Println(fmt.Sprintf("%s RotateLog>name>%s,Hour>%d", now.Format(time.RFC3339), w.realFileName, now.Hour()))
+		w.realFileName = getActualPathReplacePattern(w.FileName)
+		// Open the log file
+		checkDir(w.realFileName)
+		fileInfo, err := os.Lstat(w.realFileName)
+		if err == nil {
+			w.maxsizeCurSize = fileInfo.Size()
+			w.maxRotateAge = now.Add(w.RotateDuration)
 		}
-		w.maxsizeCurSize = 0
-		w.file = fd
-		w.dailyOpenDate = now.Day()
-		w.hourlyOpenDate = now.Hour()
-		return nil
+
+		fd, err := os.OpenFile(w.realFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
+		if err == nil {
+			w.file = fd
+		} else {
+			fmt.Println(err)
+			return fmt.Errorf("Rotate: %s\n", err)
+		}
 	}
 
-	if w.file != nil {
-		w.file.Sync()
-		w.file.Close()
-	}
+	if w.checkRotate(now) {
 
-	fileName := getActualPathReplacePattern(w.FileName)
-	fmt.Println(fmt.Sprintf("%s fileRotate>name>%s,Hour>%d,hourly_opendate>%d,Day>%d,daily_opendate>%d,fileName>%s",
-		now.Format(time.RFC3339), w.FileName, now.Hour(), w.hourlyOpenDate, now.Day(), w.dailyOpenDate, fileName))
+		fmt.Println(fmt.Sprintf("%s RotateLog>name>%s,Hour>%d",
+			now.Format(time.RFC3339), w.realFileName, now.Hour()))
 
-	_, err := os.Lstat(fileName)
-	if err == nil {
-		if !init {
+		if w.maxsizeCurSize > 0 {
+			w.file.Sync()
+			w.file.Close()
+		}
+
+		w.realFileName = getActualPathReplacePattern(w.FileName)
+		// Open the log file
+		checkDir(w.realFileName)
+
+		_, err := os.Lstat(w.realFileName)
+		if err == nil {
 			num := 1
-			fname := ""
-			num = w.MaxBackup - 1
-			for ; num >= 1; num-- {
-				fname = fileName + fmt.Sprintf(".%d", num)
-				nfname := fileName + fmt.Sprintf(".%d", num+1)
-				_, err = os.Lstat(fname)
-				if err == nil {
-					os.Rename(fname, nfname)
+			for ; ; num++ {
+				fname := w.realFileName + fmt.Sprintf(".%d", num)
+				_, err := os.Lstat(fname)
+				if err != nil {
+					err = os.Rename(w.realFileName, fname)
+					break
 				}
 			}
-			err = os.Rename(fileName, fname)
-			if err != nil {
-				return fmt.Errorf("Rotate: %s\n", err)
-			}
+		}
+
+		fd, err := os.OpenFile(w.realFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		w.file = fd
+
+		w.maxRotateAge = now.Add(w.RotateDuration)
+		w.maxsizeCurSize = 0
+	} else {
+		if w.maxsizeCurSize > 0 {
+			w.file.Sync()
 		}
 	}
-
-	// Open the log file
-	checkDir(fileName)
-	fd, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
-	if err != nil {
-		return err
-	}
-	w.file = fd
-
-	w.dailyOpenDate = now.Day()
-	w.hourlyOpenDate = now.Hour()
-	w.minuteOpenDate = now.Minute()
-	w.maxsizeCurSize = 0
 	return nil
 }
 
