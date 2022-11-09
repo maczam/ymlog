@@ -8,12 +8,11 @@ import (
 func main() {
 	///file log
 	logger := ymlog.NewLogger(&ymlog.FileLoggerWriter{
-		ChanBufferLength: 10240,
-		FileName:         "/pdata/log/test/example_%Y%M%D-%H%m.log.log",
-		RotateSize:       true,
-		MaxSize:          512, // megabytes
-		MaxBackup:        2,
-		WriteFileBuffer:  10,
+		FileName:         "/pdata/log/test/3m%Y%M%D-%H%m.log",
+		MaxSizeByteSize:  1024 * 1024 * 3,
+		RotateDuration:   time.Minute,
+		ChanBufferLength: 1024,
+		WriteFileBuffer:  1024,
 	},
 	)
 	logger.InfoString("init NewLogger log")
