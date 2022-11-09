@@ -3,7 +3,7 @@ module benchmarks
 go 1.18
 
 require (
-	github.com/maczam/ymlog v1.0.1
+	github.com/maczam/ymlog v1.0.2
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	go.uber.org/zap v1.23.0
 )
