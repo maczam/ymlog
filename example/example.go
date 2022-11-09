@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/maczam/ymlog"
+	"os"
 	"time"
 )
 
@@ -18,7 +19,9 @@ func main() {
 	logger.InfoString("init NewLogger log")
 
 	///console
-	logger1 := ymlog.NewLogger(&ymlog.ConsoleLoggerWriter{})
+	logger1 := ymlog.NewLogger(&ymlog.OutLoggerWriter{
+		Out: os.Stdout,
+	})
 	logger1.InfoString("init ConsoleLoggerWriter log")
 
 	for {

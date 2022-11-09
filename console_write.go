@@ -1,22 +1,24 @@
 package ymlog
 
-import "fmt"
+import (
+	"io"
+)
 
 //start()
 //writeLog([]byte)
 //close()
 
-type ConsoleLoggerWriter struct {
+type OutLoggerWriter struct {
+	Out io.Writer
 }
 
-func (w *ConsoleLoggerWriter) start() {
+func (w *OutLoggerWriter) start() {
 
 }
 
-func (w *ConsoleLoggerWriter) writeLog(msg []byte) {
-	fmt.Println(*bytesToString(msg))
+func (w *OutLoggerWriter) writeLog(msg []byte) {
+	w.Out.Write(msg)
 }
 
-func (w *ConsoleLoggerWriter) close() {
-
+func (w *OutLoggerWriter) close() {
 }
