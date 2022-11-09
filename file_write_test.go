@@ -2,6 +2,7 @@ package ymlog
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 )
@@ -19,8 +20,10 @@ func TestRoteMin1(t *testing.T) {
 	logger.InfoString("init NewLogger log")
 
 	///console
-	logger1 := NewLogger(&ConsoleLoggerWriter{})
-	logger1.InfoString("init ConsoleLoggerWriter log")
+	logger1 := NewLogger(&OutLoggerWriter{
+		Out: os.Stdout,
+	})
+	logger1.InfoString("init OutLoggerWriter log")
 
 	for {
 		time.Sleep(time.Second * 90)

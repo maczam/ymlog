@@ -25,7 +25,7 @@ func main() {
 	logger1.InfoString("init ConsoleLoggerWriter log")
 
 	for {
-		time.Sleep(time.Second * 90)
+		time.Sleep(time.Second * 1)
 		logger.InfoString(time.Now().String())
 		logger1.InfoString(time.Now().String())
 	}
