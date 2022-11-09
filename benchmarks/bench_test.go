@@ -37,4 +37,36 @@ func BenchmarkWithString(b *testing.B) {
 		})
 	})
 
+	b.Run("YmLog-byte-1024", func(b *testing.B) {
+		logger := newYmLog1024Logger()
+		var msgbyte = []byte(msg)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.InfoBytes(msgbyte)
+			}
+		})
+	})
+
+	b.Run("YmLog-byte-2048", func(b *testing.B) {
+		logger := newYmLog2048Logger()
+		var msgbyte = []byte(msg)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.InfoBytes(msgbyte)
+			}
+		})
+	})
+
+	b.Run("Zerolog", func(b *testing.B) {
+		logger := newZerologLogger()
+		var msgbyte = []byte(msg)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Write(msgbyte)
+			}
+		})
+	})
 }

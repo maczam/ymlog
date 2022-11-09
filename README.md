@@ -76,16 +76,24 @@ log file
 
 Benchmark test file
 ``` 
-    goos: windows
-    goarch: amd64
-    pkg: benchmarks
-    cpu: AMD Ryzen 7 4800H with Radeon Graphics
-    BenchmarkWithString
-    BenchmarkWithString/Zap
-    BenchmarkWithString/Zap-16                150902              8166 ns/op
-    BenchmarkWithString/YmLog-1024
-    BenchmarkWithString/YmLog-1024-16         841738              1231 ns/op
-    BenchmarkWithString/YmLog-2048
-    BenchmarkWithString/YmLog-2048-16        1000000              1008 ns/op
-    PASS
+goos: windows
+goarch: amd64
+pkg: benchmarks
+cpu: AMD Ryzen 7 4800H with Radeon Graphics
+BenchmarkWithString
+BenchmarkWithString/Zap
+BenchmarkWithString/Zap-16                156559              8015 ns/op
+BenchmarkWithString/YmLog-1024
+BenchmarkWithString/YmLog-1024-16        1084400              1198 ns/op
+BenchmarkWithString/YmLog-2048
+BenchmarkWithString/YmLog-2048-16        1413888               884.2 ns/op
+BenchmarkWithString/YmLog-byte-1024
+BenchmarkWithString/YmLog-byte-1024-16           1000000              1480 ns/op
+BenchmarkWithString/YmLog-byte-2048
+BenchmarkWithString/YmLog-byte-2048-16           1000000              1024 ns/op
+BenchmarkWithString/Zerolog
+BenchmarkWithString/Zerolog-16                     12501             96929 ns/op
+
+PASS
+
 ```

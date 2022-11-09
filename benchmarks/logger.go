@@ -3,8 +3,10 @@ package benchmarks
 import (
 	"github.com/maczam/ymlog"
 	"github.com/natefinch/lumberjack"
+	"github.com/rs/zerolog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"os"
 	"time"
 )
 
@@ -51,4 +53,14 @@ func getLogWriter() zapcore.WriteSyncer {
 		Compress:   false, // 是否压缩`
 	}
 	return zapcore.AddSync(lumberJackLogger)
+}
+
+func newZerologLogger() zerolog.LevelWriter {
+	timeFormat := "2006-01-02 15:04:05"
+	zerolog.TimeFieldFormat = timeFormat
+	fileName := "/pdata/log/test/zerolog.log"
+	logFile, _ := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: timeFormat}
+	multi := zerolog.MultiLevelWriter(consoleWriter, logFile)
+	return multi
 }
