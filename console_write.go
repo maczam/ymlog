@@ -18,6 +18,7 @@ func (w *OutLoggerWriter) start() {
 
 func (w *OutLoggerWriter) writeLog(msg []byte) {
 	w.Out.Write(msg)
+	w.Out.Write([]byte("\n"))
 }
 
 func (w *OutLoggerWriter) close() {
