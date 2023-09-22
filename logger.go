@@ -9,7 +9,6 @@ import (
 type Logger struct {
 	logWriter LoggerWrite
 }
-
 type LoggerWrite interface {
 	start()
 	writeLog([]byte)
@@ -20,8 +19,10 @@ func (log *Logger) start() {
 	log.logWriter.start()
 }
 
-/**
-  每个后面都要增加
+/*
+*
+
+	每个后面都要增加
 */
 func join(s [][]byte, sep byte) []byte {
 	if len(s) == 0 {
@@ -88,8 +89,10 @@ func stringToBytes(s *string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&bh))
 }
 
-/**
-  new Logger
+/*
+*
+
+	new Logger
 */
 func NewLogger(logWriter LoggerWrite) *Logger {
 	logger := &Logger{

@@ -1,7 +1,6 @@
 package ymlog
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,9 +10,18 @@ import (
 )
 
 const DEFAULT_LOG_BUFFER_LENGTH = 2048
-const DEFAULT_Rotate_Duration = time.Hour * 24
+
+//const DEFAULT_Rotate_Duration = time.Hour * 24
 
 var line = []byte("\n")
+
+type RotateType int
+
+const (
+	RotateMinute RotateType = 1
+	RotateHour   RotateType = 2
+	RotateDay    RotateType = 3
+)
 
 type FileLoggerWriter struct {
 	msgChan        chan []byte
@@ -26,7 +34,10 @@ type FileLoggerWriter struct {
 	FileName     string
 	realFileName string
 
-	RotateDuration  time.Duration
+	rotateTime     bool //
+	rotateDuration time.Duration
+
+	RotateType      RotateType
 	MaxSizeByteSize int64 //byte
 
 	//buffer
@@ -39,16 +50,28 @@ func (w *FileLoggerWriter) start() {
 		panic("log.FileLoggerWriter error")
 	}
 
-	if w.RotateDuration == 0 {
-		w.RotateDuration = DEFAULT_Rotate_Duration
-	}
+	if w.RotateType == 0 {
 
-	if w.RotateDuration < time.Second {
-		//fmt.Println("RotateDuration is less one Second")
-		panic(errors.New("RotateDuration is less one Second"))
+	} else {
+		switch w.RotateType {
+		case RotateMinute:
+			w.rotateDuration = time.Second * 60
+			currentTime := time.Now()
+			truncatedTime := currentTime.Truncate(time.Minute)
+			w.maxRotateAge = truncatedTime.Add(w.rotateDuration)
+		case RotateHour:
+			w.rotateDuration = time.Hour
+			currentTime := time.Now()
+			truncatedTime := currentTime.Truncate(time.Hour)
+			w.maxRotateAge = truncatedTime.Add(w.rotateDuration)
+		case RotateDay:
+			w.rotateDuration = time.Hour * 24
+			currentTime := time.Now()
+			truncatedTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 0, 0, 0, 0, currentTime.Location())
+			w.maxRotateAge = truncatedTime.Add(w.rotateDuration)
+		}
+		w.rotateTime = true
 	}
-
-	w.maxRotateAge = time.Now().Add(w.RotateDuration)
 
 	//ChanBufferLength
 	if w.msgChan == nil {
@@ -146,7 +169,8 @@ func (w *FileLoggerWriter) close() {
 
 }
 
-/**
+/*
+*
 Real file cutting, cutting method lock, and do secondary authentication
 */
 func (w *FileLoggerWriter) fileRotate(init bool) error {
@@ -163,7 +187,29 @@ func (w *FileLoggerWriter) fileRotate(init bool) error {
 		fileInfo, err := os.Lstat(w.realFileName)
 		if err == nil {
 			w.maxsizeCurSize = fileInfo.Size()
-			w.maxRotateAge = now.Add(w.RotateDuration)
+
+			switch w.RotateType {
+			case RotateMinute:
+				w.rotateDuration = time.Second * 60
+				w.maxRotateAge = time.Now().Add(w.rotateDuration)
+				currentTime := time.Now()
+				truncatedTime := currentTime.Truncate(time.Second)
+				w.maxRotateAge = truncatedTime.Add(w.rotateDuration)
+			case RotateHour:
+				w.rotateDuration = time.Hour
+				currentTime := time.Now()
+				truncatedTime := currentTime.Truncate(time.Minute)
+				w.maxRotateAge = truncatedTime.Add(w.rotateDuration)
+			case RotateDay:
+				currentTime := time.Now()
+				truncatedTime := currentTime.Truncate(time.Hour)
+				w.maxRotateAge = truncatedTime.Add(w.rotateDuration)
+				w.rotateDuration = time.Hour * 24
+			}
+
+			w.rotateTime = true
+
+			w.maxRotateAge = now.Add(w.rotateDuration)
 		}
 
 		fd, err := os.OpenFile(w.realFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
@@ -209,7 +255,7 @@ func (w *FileLoggerWriter) fileRotate(init bool) error {
 		}
 		w.file = fd
 
-		w.maxRotateAge = now.Add(w.RotateDuration)
+		w.maxRotateAge = now.Add(w.rotateDuration)
 		w.maxsizeCurSize = 0
 	} else {
 		if w.maxsizeCurSize > 0 {
