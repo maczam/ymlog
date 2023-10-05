@@ -9,6 +9,7 @@ pkg/*
 
 # goop - go package manager
 .vendor
+logs/
 
 
 
